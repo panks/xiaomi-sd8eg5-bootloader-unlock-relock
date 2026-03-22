@@ -104,9 +104,13 @@ The bootloader is now unlocked — you can now install custom ROMs,
 custom recoveries (like TWRP), or modify system partitions.
 
 ### RELOCKING
-**IMPORTANT**: Ensure you are on Official Region (CN/Global/EEA/India/Turkey/etc) Factory ROM. Else you will have a bricked device!!
 
-Same process as locking, except use relock scripts.
+#### On Custom (or alternate region) ROM
+Use `xiaomi_relock_custom_MACOS_LINUX.sh` or `xiaomi_relock_custom_WINDOWS.bat` script.
+**IMPORTANT**: DO NOT use xiaomi_relock_stock.. scripts else device will brick.
+
+#### On Stock (home region) ROM
+Use `xiaomi_relock_stock_MACOS_LINUX.sh` or `xiaomi_relock_stock_WINDOWS.bat` script.
 
 ### DISCLAIMER
 
