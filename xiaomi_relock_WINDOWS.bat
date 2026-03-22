@@ -34,39 +34,31 @@ ECHO.Waiting for device connection...
 fastboot.exe devices 2>&1 | find "fastboot" || goto B
 ECHO.Device connected
 ECHO.Checking relock status...
-fastboot.exe getvar unlocked 2>&1 | find "unlockd: no" 1>nul 2>nul && ECHO.Device is already locked, no need to relock again. Press any key to exit... && pause>nul && EXIT
-ECHO.Temporarily setting SELinux to permissive...
-fastboot.exe oem set-gpu-preemption-value 0 androidboot.selinux=permissive 1>log1.txt 2>&1 || fastboot.exe reboot && goto FAILED
-fastboot.exe continue 1>log2.txt 2>&1 || goto FAILED
-ECHO.Waiting for device connection...
-:C
-adb.exe devices | find /v "List of devices attached" | find "device" 1>nul 2>nul || goto C
-ECHO.Device connected
-ECHO.Checking SELinux status... & adb.exe shell getenforce>log3.txt || goto FAILED
-find "Permissive" "log3.txt" 1>nul 2>nul || goto FAILED
-ECHO.Writing relock program...
-adb.exe push linuxloader_relock.efi /data/local/tmp/linuxloader_relock.efi 1>nul || goto FAILED
-adb.exe shell service call miui.mqsas.IMQSNative 21 i32 1 s16 "dd" i32 1 s16 'if=/data/local/tmp/linuxloader_relock.efi of=/dev/block/by-name/efisp' s16 '/data/mqsas/log.txt' i32 60 1>log4.txt 2>&1 || goto FAILED
-ECHO.Rebooting to Fastboot... & adb.exe reboot bootloader || goto FAILED
-ECHO.Waiting for device connection...
-:D
-fastboot.exe devices 2>&1 | find "fastboot" || goto D
-ECHO.Device connected
-ECHO.Checking lock status...
-fastboot.exe getvar unlocked 1>log5.txt 2>&1 || goto FAILED
-find "unlocked: no" "log5.txt" 1>nul 2>nul || goto FAILED
+fastboot.exe getvar unlocked 2>&1 | find "unlocked: no" 1>nul 2>nul && ECHO.Device is already locked, no need to relock again. Press any key to exit... && pause>nul && EXIT
+
 ECHO.
-ECHO.Congratulations! Relock successful
+ECHO.=== EXECUTING CLEAN RELOCK ===
 ECHO.
-ECHO.Erasing efisp partition... & fastboot.exe flash efisp efisp_blank.img || ECHO.Failed
-ECHO.Rebooting and automatically performing factory reset...
-fastboot.exe flash misc misc_wipedata_mi.img || ECHO.Failed
-fastboot.exe reboot || ECHO.Failed
+
+ECHO.1. Wiping efisp partition to remove debug text...
+fastboot.exe flash efisp efisp_blank.img || goto FAILED
+
+ECHO.2. Flashing misc for factory reset on next boot...
+fastboot.exe flash misc misc_wipedata_mi.img || goto FAILED
+
+ECHO.3. Sending official lock command...
+ECHO.>>> PLEASE LOOK AT YOUR PHONE SCREEN <<<
+ECHO.You may need to confirm the lock using the volume and power buttons.
+fastboot.exe oem lock || goto FAILED
+
+ECHO.
+ECHO.Congratulations, bootloader relock command sent successfully.
+ECHO.Your device should wipe data and reboot shortly.
 ECHO.
 ECHO.All done. Press any key to exit...
 ECHO.
 pause>nul
 EXIT
+
 :FAILED
 ECHO. & ECHO.Failed. Press any key to exit... & pause>nul & EXIT
-

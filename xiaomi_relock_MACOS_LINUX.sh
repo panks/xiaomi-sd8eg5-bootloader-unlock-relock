@@ -62,56 +62,27 @@ if $FASTBOOT getvar unlocked 2>&1 | grep -q "unlocked: no"; then
     exit 0
 fi
 
-echo "Setting SELinux to permissive temporarily..."
-$FASTBOOT oem set-gpu-preemption-value 0 androidboot.selinux=permissive > "$SCRIPT_DIR/log1.txt" 2>&1 \
-    || { $FASTBOOT reboot; echo "FAILED"; exit 1; }
-
-$FASTBOOT continue > "$SCRIPT_DIR/log2.txt" 2>&1 || { echo "FAILED"; exit 1; }
-
-echo "Waiting for ADB device..."
-while ! $ADB devices | grep -v "List of devices attached" | grep -q "device"; do
-    sleep 1
-done
-echo "Device connected."
-
-echo -n "Checking SELinux status... "
-$ADB shell getenforce > "$SCRIPT_DIR/log3.txt" || { echo "FAILED"; exit 1; }
-grep -q "Permissive" "$SCRIPT_DIR/log3.txt" || { echo "SELinux is NOT permissive — FAILED"; exit 1; }
-echo "Permissive. OK."
-
-echo "Pushing relock loader..."
-$ADB push "$BIN_DIR/linuxloader_relock.efi" /data/local/tmp/linuxloader_relock.efi \
-    || { echo "FAILED"; exit 1; }
-
-$ADB shell "service call miui.mqsas.IMQSNative 21 i32 1 s16 'dd' i32 1 s16 'if=/data/local/tmp/linuxloader_relock.efi of=/dev/block/by-name/efisp' s16 '/data/mqsas/log.txt' i32 60" > "$SCRIPT_DIR/log4.txt" 2>&1 \
-    || { echo "FAILED"; exit 1; }
-
-echo "Rebooting to fastboot..."
-$ADB reboot bootloader || { echo "FAILED"; exit 1; }
-
-echo "Waiting for fastboot device..."
-while ! $FASTBOOT devices 2>&1 | grep -q "fastboot"; do
-    sleep 1
-done
-echo "Device connected."
-
-echo "Verifying lock status..."
-$FASTBOOT getvar unlocked > "$SCRIPT_DIR/log5.txt" 2>&1 || { echo "FAILED"; exit 1; }
-grep -q "unlocked: no" "$SCRIPT_DIR/log5.txt" || { echo "Relock verification FAILED"; exit 1; }
-
 echo ""
-echo "Congratulations! Bootloader relocked successfully!"
+echo "=== EXECUTING CLEAN RELOCK ==="
 echo ""
 
-echo -n "Wiping efisp partition... "
-$FASTBOOT flash efisp "$BIN_DIR/efisp_blank.img" || echo "Warning: Failed"
+echo -n "1. Wiping efisp partition to remove debug text... "
+$FASTBOOT flash efisp "$BIN_DIR/efisp_blank.img" || { echo "FAILED to wipe efisp!"; exit 1; }
 
-echo "Flashing misc for factory reset on next boot..."
-$FASTBOOT flash misc "$BIN_DIR/misc_wipedata_mi.img" || echo "Warning: Failed"
+echo "2. Flashing misc for factory reset on next boot..."
+$FASTBOOT flash misc "$BIN_DIR/misc_wipedata_mi.img" || { echo "FAILED to flash misc!"; exit 1; }
 
-$FASTBOOT reboot || echo "Warning: Reboot command failed"
+echo "3. Sending official lock command..."
+echo ">>> PLEASE LOOK AT YOUR PHONE SCREEN <<<"
+echo "You may need to confirm the lock using the volume and power buttons."
+$FASTBOOT oem lock || { echo "FAILED: Official lock command rejected."; exit 1; }
 
 echo ""
+echo "Congratulations! Bootloader relock command sent successfully!"
+echo "Your device should wipe data and reboot shortly."
+echo ""
+
 echo "All done! Press Enter to exit."
 read -r
 exit 0
+
