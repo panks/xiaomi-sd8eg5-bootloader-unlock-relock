@@ -103,12 +103,6 @@ echo ""
 echo "Congratulations! Bootloader relocked successfully!"
 echo ""
 
-echo -n "Wiping efisp partition... "
-$FASTBOOT flash efisp "$BIN_DIR/efisp_blank.img" || echo "Warning: Failed"
-
-echo "Flashing misc for factory reset on next boot..."
-$FASTBOOT flash misc "$BIN_DIR/misc_wipedata_mi.img" || echo "Warning: Failed"
-
 $FASTBOOT reboot || echo "Warning: Reboot command failed"
 
 echo ""

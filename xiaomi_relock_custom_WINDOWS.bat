@@ -58,9 +58,7 @@ find "unlocked: no" "log5.txt" 1>nul 2>nul || goto FAILED
 ECHO.
 ECHO.Congratulations! Relock successful
 ECHO.
-ECHO.Erasing efisp partition... & fastboot.exe flash efisp efisp_blank.img || ECHO.Failed
-ECHO.Rebooting and automatically performing factory reset...
-fastboot.exe flash misc misc_wipedata_mi.img || ECHO.Failed
+ECHO.Rebooting...
 fastboot.exe reboot || ECHO.Failed
 ECHO.
 ECHO.All done. Press any key to exit...
